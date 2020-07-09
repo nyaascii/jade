@@ -77,12 +77,13 @@ func goImports(absPath string, src []byte) []byte {
 
 //
 
-func genFile(path, outdir, pkg_name string) {
+func genFile(funcMap map[string]string, path, outdir, pkg_name string) {
 	log.Printf("\nfile: %q\n", path)
 
 	var (
 		dir, fname = filepath.Split(path)
 		outPath    = outdir + "/" + fname
+		relDir, _ = filepath.Rel(basedir, dir)
 		rx, _      = regexp.Compile("[^a-zA-Z0-9]+")
 		constName  = rx.ReplaceAllString(fname[:len(fname)-4], "")
 	)
@@ -116,7 +117,7 @@ func genFile(path, outdir, pkg_name string) {
 
 	var (
 		bb  = new(bytes.Buffer)
-		tpl = newLayout(constName)
+		tpl, funcName = newLayout(constName)
 	)
 	tpl.writeBefore(bb)
 	jst.WriteIn(bb)
@@ -138,25 +139,27 @@ func genFile(path, outdir, pkg_name string) {
 	gst.checkUnresolvedBlock()
 
 	bb.Reset()
-	fmtOut := goImports(outPath, gst.bytes(bb))
+	//fmtOut := goImports(outPath, gst.bytes(bb))
 
 	//
 
-	err = ioutil.WriteFile(outPath+".go", fmtOut, 0644)
+	//err = ioutil.WriteFile(outPath+".go", fmtOut, 0644)
+	err = ioutil.WriteFile(outPath+".go", gst.bytes(bb), 0644)
 	if err != nil {
 		log.Fatalln("cmd/jade: WriteFile(): ", err)
 	}
 	fmt.Printf("generate: %s.go  done.\n\n", outPath)
+	funcMap[relDir + constName] = funcName
 }
 
-func genDir(dir, outdir, pkg_name string) {
+func genDir(funcMap map[string]string, dir, outdir, pkg_name string) {
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return fmt.Errorf("prevent panic by handling failure accessing a path %q: %v\n", dir, err)
 		}
-
 		if ext := filepath.Ext(info.Name()); ext == ".jade" || ext == ".pug" {
-			genFile(path, outdir, pkg_name)
+			genFile(funcMap, path, outdir, pkg_name)
+			fmt.Printf("funcMap: %v", funcMap)
 		}
 		return nil
 	})
@@ -186,6 +189,8 @@ func main() {
 		os.Chdir(basedir)
 	}
 
+	funcMap := make(map[string]string)
+
 	for _, jadePath := range flag.Args() {
 
 		stat, err := os.Stat(jadePath)
@@ -195,12 +200,12 @@ func main() {
 
 		absPath, _ := filepath.Abs(jadePath)
 		if stat.IsDir() {
-			genDir(absPath, outdir, pkg_name)
+			genDir(funcMap, absPath, outdir, pkg_name)
 		} else {
-			genFile(absPath, outdir, pkg_name)
+			genFile(funcMap, absPath, outdir, pkg_name)
 		}
 		if !stdlib {
-			makeJfile(stdbuf)
+			makeJfile(stdbuf, funcMap)
 		}
 	}
 }

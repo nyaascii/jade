@@ -61,6 +61,9 @@ func rewrite(in []ast.Stmt, info *types.Info) {
 						continue
 					}
 
+					fmt.Printf("Values: %v", v)
+					fmt.Printf("Values[0]: %v", v.Values[0])
+
 					switch vt := info.TypeOf(v.Values[0]).(type) {
 					case *types.Basic:
 						if stdlib {

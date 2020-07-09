@@ -103,7 +103,7 @@ func (data *layout) writeAfter(wr *bytes.Buffer) {
 	}
 }
 
-func newLayout(constName string) layout {
+func newLayout(constName string) (layout, string) {
 	var tpl layout
 	tpl.Package = pkg_name
 
@@ -152,12 +152,15 @@ func newLayout(constName string) layout {
 	//
 
 	goFilter := jade.UseGoFilter()
+	var funcName string
 
 	if goFilter.Name != "" {
 		tpl.Func = "func " + goFilter.Name
+		funcName = goFilter.Name
 		goFilter.Name = ""
 	} else {
 		tpl.Func = `func Jade_` + constName
+		funcName = "Jade_" + constName
 	}
 
 	if goFilter.Args != "" {
@@ -192,5 +195,5 @@ func newLayout(constName string) layout {
 		tpl.Import = append(tpl.Import, imp...)
 		goFilter.Import = ""
 	}
-	return tpl
+	return tpl, funcName
 }

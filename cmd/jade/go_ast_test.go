@@ -115,7 +115,7 @@ func astTest(fpath string, text []byte, fname string) ([]byte, error) {
 
 	var (
 		bb  = new(bytes.Buffer)
-		tpl = newLayout(fname)
+		tpl, _ = newLayout(fname)
 	)
 	tpl.writeBefore(bb)
 	jst.WriteIn(bb)
